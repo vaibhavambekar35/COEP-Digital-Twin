@@ -1,0 +1,695 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#18251e">
+  <title>COEP Digital Twin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #18251e;
+      --muted: #748078;
+      --paper: #f3f5ef;
+      --white: #fffefa;
+      --line: #e2e8de;
+      --green: #2e624b;
+      --lime: #d7ec75;
+      --coral: #e4745e;
+      --orange: #f97316;
+      font-family: "DM Sans", sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+    }
+    * { box-sizing: border-box; }
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      background-color: var(--paper);
+      background-image: radial-gradient(#c9d4c8 0.65px, transparent 0.65px);
+      background-size: 15px 15px;
+    }
+    button, textarea { font: inherit; }
+    button { color: inherit; }
+    .app-shell {
+      width: min(100% - 44px, 1120px);
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 28px 0;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 20px;
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 0 2px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark {
+      display: grid;
+      width: 40px;
+      height: 40px;
+      place-items: center;
+      border-radius: 12px;
+      color: var(--lime);
+      background: var(--ink);
+    }
+    .brand-mark svg { width: 22px; height: 22px; }
+    .brand-name {
+      font: 800 17px/1 "Manrope", sans-serif;
+      letter-spacing: 0;
+    }
+    .brand-note {
+      margin-top: 5px;
+      color: var(--muted);
+      font: 500 10px/1 "DM Mono", monospace;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 12px;
+      border: 1px solid #dfe6dc;
+      border-radius: 99px;
+      background: rgba(255, 254, 250, 0.7);
+      color: #536159;
+      font: 500 11px/1 "DM Mono", monospace;
+      text-transform: uppercase;
+    }
+    .status::before {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #71a87c;
+      content: "";
+      box-shadow: 0 0 0 3px #71a87c22;
+    }
+    .status.not-ready { color: #8d6743; }
+    .status.not-ready::before { background: #d7a65a; box-shadow: 0 0 0 3px #d7a65a22; }
+    .workspace {
+      min-height: 0;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 278px;
+      border: 1px solid #dce4d9;
+      border-radius: 16px;
+      background: var(--white);
+      box-shadow: 0 18px 55px #21342913;
+    }
+    .chat-column { min-height: 660px; display: grid; grid-template-rows: auto 1fr auto; }
+    .chat-head {
+      min-height: 77px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 16px 26px;
+      border-bottom: 1px solid var(--line);
+    }
+    .chat-title { margin: 0; font: 700 15px/1.2 "Manrope", sans-serif; }
+    .chat-caption { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+    .clear-button {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: transparent;
+      cursor: pointer;
+      transition: background 150ms ease, border-color 150ms ease;
+    }
+    .clear-button:hover { border-color: #bdc9bc; background: #f3f6f0; }
+    .clear-button svg { width: 17px; height: 17px; }
+    .messages {
+      min-height: 0;
+      overflow: auto;
+      padding: 26px clamp(18px, 5vw, 62px) 34px;
+      scroll-behavior: smooth;
+    }
+    .welcome { max-width: 520px; padding: 28px 0 20px; animation: enter 500ms ease both; }
+    .welcome-symbol {
+      width: 50px;
+      height: 50px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 21px;
+      border: 1px solid #e6ebdf;
+      border-radius: 15px;
+      color: var(--green);
+      background: #f5f8ee;
+    }
+    .welcome-symbol svg { width: 24px; height: 24px; }
+    .welcome h1 {
+      max-width: 500px;
+      margin: 0;
+      font: 700 35px/1.13 "Manrope", sans-serif;
+      letter-spacing: 0;
+    }
+    .welcome p { max-width: 430px; margin: 13px 0 0; color: #68756c; font-size: 14px; line-height: 1.65; }
+    .starter-label {
+      margin: 30px 0 10px;
+      color: #8a958c;
+      font: 500 10px/1 "DM Mono", monospace;
+      text-transform: uppercase;
+    }
+    .suggestions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .suggestion {
+      padding: 9px 12px;
+      border: 1px solid #e1e8dd;
+      border-radius: 9px;
+      color: #45554a;
+      background: #fbfcf8;
+      font-size: 12px;
+      cursor: pointer;
+      transition: border-color 150ms ease, background 150ms ease;
+    }
+    .suggestion:hover { border-color: #b6c6b5; background: #f2f7e9; }
+    .message-row { display: flex; margin: 20px 0; animation: enter 240ms ease both; }
+    .message-row.user { justify-content: flex-end; }
+    .bubble {
+      max-width: min(82%, 620px);
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      padding: 13px 16px;
+      border: 1px solid #e6ebe3;
+      border-radius: 4px 14px 14px 14px;
+      color: #354139;
+      background: #f7f8f3;
+      font-size: 14px;
+      line-height: 1.65;
+    }
+    .assistant .bubble p { margin: 0 0 10px; }
+    .assistant .bubble p:last-child { margin-bottom: 0; }
+    .assistant .bubble h3 { margin: 2px 0 9px; font: 700 15px/1.35 "Manrope", sans-serif; }
+    .assistant .bubble ul, .assistant .bubble ol { margin: 2px 0 11px; padding-left: 22px; }
+    .assistant .bubble li { padding-left: 2px; }
+    .assistant .bubble li + li { margin-top: 4px; }
+    .user .bubble {
+      border-color: var(--orange);
+      border-radius: 14px 4px 14px 14px;
+      color: #fff;
+      background: var(--orange);
+    }
+    .source-list { display: flex; flex-wrap: wrap; gap: 7px; margin: -9px 0 20px; }
+    .source-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 100%;
+      padding: 6px 9px;
+      border: 1px solid #e1e9d8;
+      border-radius: 6px;
+      color: #52654e;
+      background: #f6f8ee;
+      font: 500 10px/1.4 "DM Mono", monospace;
+      overflow-wrap: anywhere;
+    }
+    .source-chip svg { width: 13px; height: 13px; flex: 0 0 auto; }
+    .typing { display: flex; align-items: center; gap: 5px; width: fit-content; padding: 14px 16px; border: 1px solid var(--line); border-radius: 4px 14px 14px 14px; background: #f7f8f3; }
+    .typing span { width: 6px; height: 6px; border-radius: 50%; background: #819087; animation: pulse 1s infinite ease-in-out; }
+    .typing span:nth-child(2) { animation-delay: 130ms; }
+    .typing span:nth-child(3) { animation-delay: 260ms; }
+    .composer-wrap { padding: 15px clamp(18px, 5vw, 62px) 20px; border-top: 1px solid var(--line); background: #fffefa; }
+    .composer {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      padding: 8px 8px 8px 15px;
+      border: 1px solid #dce5d8;
+      border-radius: 12px;
+      background: #fff;
+      transition: border-color 150ms ease, box-shadow 150ms ease;
+    }
+    .composer:focus-within { border-color: #88a68a; box-shadow: 0 0 0 3px #6d9b7520; }
+    textarea {
+      width: 100%;
+      min-height: 42px;
+      max-height: 130px;
+      resize: none;
+      padding: 11px 0 8px;
+      border: 0;
+      outline: 0;
+      color: var(--ink);
+      background: transparent;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    textarea::placeholder { color: #9aa39c; }
+    .mic-button {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border: 0;
+      border-radius: 9px;
+      color: var(--ink);
+      background: #e7ede5;
+      cursor: pointer;
+      margin-right: 6px;
+      transition: transform 150ms ease, background 150ms ease, color 150ms ease;
+    }
+    .mic-button:hover { transform: translateY(-1px); background: #dce4d8; }
+    .mic-button.listening {
+      background: #e4745e;
+      color: #fff;
+      animation: pulse-mic 1.2s infinite ease-in-out;
+    }
+    @keyframes pulse-mic {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(228, 116, 94, 0.4); }
+      50% { transform: scale(1.06); box-shadow: 0 0 0 6px rgba(228, 116, 94, 0); }
+    }
+    .mic-button svg { width: 18px; height: 18px; }
+    .send-button {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border: 0;
+      border-radius: 9px;
+      color: var(--ink);
+      background: var(--lime);
+      cursor: pointer;
+      transition: transform 150ms ease, background 150ms ease;
+    }
+    .send-button:hover { transform: translateY(-1px); background: #cce363; }
+    .send-button:disabled { cursor: wait; opacity: .6; }
+    .send-button svg { width: 18px; height: 18px; }
+    .side-panel {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 28px 24px;
+      border-left: 1px solid var(--line);
+      color: #f4f4e9;
+      background: var(--ink);
+    }
+    .side-panel::after {
+      position: absolute;
+      right: -72px;
+      bottom: 86px;
+      width: 240px;
+      height: 240px;
+      border: 1px solid #d8e98d38;
+      border-radius: 50%;
+      box-shadow: 0 0 0 22px #d8e98d0d, 0 0 0 45px #d8e98d0a;
+      content: "";
+      pointer-events: none;
+    }
+    .side-kicker { color: #c6d679; font: 500 10px/1 "DM Mono", monospace; text-transform: uppercase; }
+    .side-panel h2 { max-width: 200px; margin: 17px 0 0; font: 600 23px/1.25 "Manrope", sans-serif; }
+    .side-copy { max-width: 210px; margin: 12px 0 0; color: #aab7ac; font-size: 12px; line-height: 1.7; }
+    .side-rule { width: 32px; height: 3px; margin: 23px 0; border-radius: 2px; background: var(--coral); }
+    .side-footer { position: relative; z-index: 1; color: #8d9c91; font: 400 10px/1.6 "DM Mono", monospace; }
+    .side-footer span { color: #dce9a0; }
+    .error-note { margin: 8px 0 0; color: #ae4c3a; font-size: 12px; }
+    body.embed .app-shell { width: 100%; min-height: 100vh; padding: 0; gap: 0; }
+    body.embed .topbar, body.embed .side-panel { display: none; }
+    body.embed .workspace { min-height: 100vh; border: 0; border-radius: 0; box-shadow: none; }
+    body.embed .chat-column { min-height: 100vh; }
+    @keyframes pulse { 0%, 60%, 100% { transform: translateY(0); opacity: .55; } 30% { transform: translateY(-4px); opacity: 1; } }
+    @keyframes enter { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 760px) {
+      .app-shell { width: min(100% - 24px, 620px); padding: 13px 0; gap: 12px; }
+      .workspace { grid-template-columns: 1fr; }
+      .chat-column { min-height: min(760px, calc(100dvh - 78px)); }
+      .side-panel { display: none; }
+      .chat-head { min-height: 66px; padding: 13px 17px; }
+      .messages { padding: 18px 18px 24px; }
+      .welcome { padding-top: 19px; }
+      .welcome h1 { font-size: 29px; }
+      .composer-wrap { padding: 12px 15px 14px; }
+      .bubble { max-width: 90%; }
+      .brand-note { display: none; }
+      .status { padding: 8px 10px; font-size: 9px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M6 4.75h8.5L19 9.2v10.05H6V4.75Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M14 4.9v4.7h4.7M9 13h7M9 16.3h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div>
+          <div class="brand-name">COEP Digital Twin</div>
+          <div class="brand-note">COEP Technological University</div>
+        </div>
+      </div>
+      <div class="status" id="index-status">Checking setup</div>
+    </header>
+
+    <main class="workspace">
+      <section class="chat-column" aria-label="COEP Digital Twin chat">
+        <div class="chat-head">
+          <div>
+            <h2 class="chat-title">New conversation</h2>
+            <p class="chat-caption">Ask about COEP Technological University</p>
+          </div>
+          <button class="clear-button" id="clear-chat" type="button" title="Start a new conversation" aria-label="Start a new conversation">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 7.5h15M9 7.5V5.25h6V7.5m-8.25 0 .75 12h9l.75-12M10 11v5m4-5v5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+
+        <div class="messages" id="messages" aria-live="polite" aria-relevant="additions text">
+          <div class="welcome" id="welcome">
+            <div class="welcome-symbol" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 3.75v2.5m0 11.5v2.5m8.25-8.25h-2.5m-11.5 0h-2.5m14.09-5.84-1.77 1.77M7.93 16.07l-1.77 1.77m11.68 0-1.77-1.77M7.93 7.93 6.16 6.16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="12" r="4.25" stroke="currentColor" stroke-width="1.6"/></svg>
+            </div>
+            <h1>COEP Technological University Digital Twin</h1>
+            <p>Ask questions grounded directly in the COEP Diagnostic Report.</p>
+            <div class="starter-label">Try a question</div>
+            <div class="suggestions">
+              <button class="suggestion" type="button">Summarize the key highlights from the COEP Diagnostic Report</button>
+              <button class="suggestion" type="button">What are the primary recommendations for COEP?</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="composer-wrap">
+          <form id="chat-form">
+            <div class="composer">
+              <textarea id="message-input" rows="1" maxlength="2000" placeholder="Ask about COEP documents..." aria-label="Your question" required></textarea>
+              <button class="mic-button" id="mic-button" type="button" title="Speak your question" aria-label="Speak your question">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3M8 22h8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+              <button class="send-button" id="send-button" type="submit" title="Send message" aria-label="Send message">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12 14-7-4.5 14-2.4-5.1L5 12Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="m12.1 13.9 4.1-4.1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+            <p class="error-note" id="error-note" role="alert" hidden></p>
+          </form>
+        </div>
+      </section>
+
+      <aside class="side-panel" aria-label="Document chat information">
+        <div>
+          <div class="side-kicker">A quieter way to search</div>
+          <h2>Find the thread that matters.</h2>
+          <div class="side-rule"></div>
+          <p class="side-copy">Space for the details that deserve another look.</p>
+        </div>
+        <div class="side-footer">A PERSONAL<br><span>REFERENCE DESK</span></div>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    if (new URLSearchParams(location.search).has("embed")) document.body.classList.add("embed");
+
+    const form = document.querySelector("#chat-form");
+    const input = document.querySelector("#message-input");
+    const messages = document.querySelector("#messages");
+    const welcome = document.querySelector("#welcome");
+    const sendButton = document.querySelector("#send-button");
+    const errorNote = document.querySelector("#error-note");
+    const conversation = [];
+    let pending = false;
+
+    fetch("/health")
+      .then((response) => response.json())
+      .then(({ configured }) => {
+        const status = document.querySelector("#index-status");
+        status.textContent = configured ? "Index configured" : "Setup needed";
+        status.classList.toggle("not-ready", !configured);
+      })
+      .catch(() => {
+        const status = document.querySelector("#index-status");
+        status.textContent = "Server unavailable";
+        status.classList.add("not-ready");
+      });
+
+    function scrollToLatest() {
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function appendFormattedText(parent, text) {
+      const emphasisPattern = /\*\*(.+?)\*\*|__(.+?)__/g;
+      let cursor = 0;
+      let match;
+
+      while ((match = emphasisPattern.exec(text)) !== null) {
+        parent.append(document.createTextNode(text.slice(cursor, match.index)));
+        const strong = document.createElement("strong");
+        strong.textContent = match[1] || match[2];
+        parent.append(strong);
+        cursor = emphasisPattern.lastIndex;
+      }
+
+      parent.append(document.createTextNode(text.slice(cursor)));
+    }
+
+    function renderAnswer(container, text) {
+      let paragraphLines = [];
+      let listElement = null;
+
+      function flushParagraph() {
+        if (!paragraphLines.length) return;
+        const paragraph = document.createElement("p");
+        appendFormattedText(paragraph, paragraphLines.join(" "));
+        container.append(paragraph);
+        paragraphLines = [];
+      }
+
+      for (const rawLine of text.split(/\r?\n/)) {
+        const line = rawLine.trim();
+        const heading = line.match(/^#{1,6}\s+(.+)$/);
+        const unorderedItem = line.match(/^[-*]\s+(.+)$/);
+        const orderedItem = line.match(/^\d+[.)]\s+(.+)$/);
+
+        if (!line) {
+          flushParagraph();
+          listElement = null;
+          continue;
+        }
+
+        if (heading) {
+          flushParagraph();
+          listElement = null;
+          const headingElement = document.createElement("h3");
+          appendFormattedText(headingElement, heading[1]);
+          container.append(headingElement);
+          continue;
+        }
+
+        if (unorderedItem || orderedItem) {
+          flushParagraph();
+          const listType = unorderedItem ? "ul" : "ol";
+          if (!listElement || listElement.tagName.toLowerCase() !== listType) {
+            listElement = document.createElement(listType);
+            container.append(listElement);
+          }
+          const item = document.createElement("li");
+          appendFormattedText(item, (unorderedItem || orderedItem)[1]);
+          listElement.append(item);
+          continue;
+        }
+
+        listElement = null;
+        paragraphLines.push(line);
+      }
+
+      flushParagraph();
+    }
+
+    function addMessage(role, text, sources = []) {
+      const row = document.createElement("div");
+      row.className = `message-row ${role}`;
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+      if (role === "assistant") renderAnswer(bubble, text);
+      else bubble.textContent = text;
+      row.append(bubble);
+      messages.append(row);
+
+      if (sources.length) {
+        const sourceList = document.createElement("div");
+        sourceList.className = "source-list";
+        for (const source of sources) {
+          const chip = document.createElement("span");
+          chip.className = "source-chip";
+          chip.innerHTML = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 4.75h8.5L19 9.2v10.05H6V4.75Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 4.9v4.7h4.7" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>';
+          const label = document.createElement("span");
+          label.textContent = source;
+          chip.append(label);
+          sourceList.append(chip);
+        }
+        messages.append(sourceList);
+      }
+      scrollToLatest();
+      return row;
+    }
+
+    function showTyping() {
+      const row = document.createElement("div");
+      row.className = "message-row assistant";
+      row.id = "typing-row";
+      const indicator = document.createElement("div");
+      indicator.className = "typing";
+      indicator.setAttribute("role", "status");
+      indicator.setAttribute("aria-label", "Searching documents");
+      for (let index = 0; index < 3; index += 1) indicator.append(document.createElement("span"));
+      row.append(indicator);
+      messages.append(row);
+      scrollToLatest();
+    }
+
+    async function sendMessage(text) {
+      if (pending || !text.trim()) return;
+      const question = text.trim();
+      welcome.hidden = true;
+      errorNote.hidden = true;
+      addMessage("user", question);
+      conversation.push({ role: "user", content: question });
+      input.value = "";
+      input.style.height = "auto";
+      pending = true;
+      sendButton.disabled = true;
+      showTyping();
+
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 70000);
+        const response = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: question,
+            history: conversation.slice(-12, -1).map((turn) => ({
+              ...turn,
+              content: turn.content.slice(0, 2000),
+            })),
+          }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        const result = await response.json();
+        document.querySelector("#typing-row")?.remove();
+        if (!response.ok) throw new Error(result.detail || "Something went wrong. Please try again.");
+        const answer = result.answer || "I don't have that information.";
+        addMessage("assistant", answer, Array.isArray(result.sources) ? result.sources : []);
+        conversation.push({ role: "assistant", content: answer });
+      } catch (error) {
+        document.querySelector("#typing-row")?.remove();
+        errorNote.textContent = error.name === "AbortError"
+          ? "Document search timed out. Please try again."
+          : error.message || "Couldn't reach the chat server. Try again in a moment.";
+        errorNote.hidden = false;
+      } finally {
+        pending = false;
+        sendButton.disabled = false;
+        input.focus();
+      }
+    }
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      sendMessage(input.value);
+    });
+    input.addEventListener("input", () => {
+      input.style.height = "auto";
+      input.style.height = `${Math.min(input.scrollHeight, 130)}px`;
+    });
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        form.requestSubmit();
+      }
+    });
+    document.querySelectorAll(".suggestion").forEach((button) => {
+      button.addEventListener("click", () => sendMessage(button.textContent));
+    });
+    document.querySelector("#clear-chat").addEventListener("click", () => {
+      if (pending) return;
+      conversation.length = 0;
+      messages.querySelectorAll(":scope > .message-row, :scope > .source-list").forEach((node) => node.remove());
+      welcome.hidden = false;
+      errorNote.hidden = true;
+      input.focus();
+    });
+
+    // Voice recognition (Microphone)
+    const micButton = document.querySelector("#mic-button");
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null;
+    let isListening = false;
+
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = "en-US";
+
+      recognition.onstart = () => {
+        isListening = true;
+        micButton.classList.add("listening");
+        micButton.title = "Listening... Click to stop";
+      };
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        if (transcript) {
+          input.value = (input.value ? input.value + " " : "") + transcript;
+          input.style.height = "auto";
+          input.style.height = `${Math.min(input.scrollHeight, 130)}px`;
+          input.focus();
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.warn("Speech recognition error:", event.error);
+        stopListening();
+      };
+
+      recognition.onend = () => {
+        stopListening();
+      };
+
+      function stopListening() {
+        isListening = false;
+        micButton.classList.remove("listening");
+        micButton.title = "Speak your question";
+      }
+
+      micButton.addEventListener("click", () => {
+        if (isListening) {
+          recognition.stop();
+        } else {
+          try {
+            recognition.start();
+          } catch (err) {
+            console.error("Could not start recognition:", err);
+          }
+        }
+      });
+    } else {
+      micButton.title = "Speech recognition is not supported in this browser";
+      micButton.style.opacity = "0.5";
+      micButton.addEventListener("click", () => {
+        alert("Speech recognition is not supported in this browser. Please try Chrome or Edge.");
+      });
+    }
+  </script>
+</body>
+</html>
