@@ -570,7 +570,7 @@
 
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 70000);
+        const timeoutId = setTimeout(() => controller.abort(), 190000);
         const response = await fetch("/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },

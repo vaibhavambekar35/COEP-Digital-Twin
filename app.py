@@ -15,7 +15,7 @@ from slowapi.util import get_remote_address
 ROOT_DIR = Path(__file__).resolve().parent
 load_dotenv(ROOT_DIR / ".env")
 
-MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
+MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
 STORE_NAME_FILE = ROOT_DIR / "store_name.txt"
 FALLBACK_ANSWER = "I don't have that information."
 SYSTEM_INSTRUCTION = (
@@ -23,7 +23,7 @@ SYSTEM_INSTRUCTION = (
     "If the answer is not in the documents, say you don't have that information. Be concise and friendly."
 )
 MAX_MESSAGE_LENGTH = 2000
-GEMINI_REQUEST_TIMEOUT_SECONDS = 60
+GEMINI_REQUEST_TIMEOUT_SECONDS = int(os.getenv("GEMINI_REQUEST_TIMEOUT_SECONDS", "180"))
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 logger = logging.getLogger(__name__)
@@ -91,7 +91,7 @@ def _get_gemini_client() -> Any:
         )
     from google import genai
 
-    return genai.Client(api_key=api_key)
+    return genai.Client(api_key=api_key, http_options={"timeout": 180000})
 
 
 def _get_field(value: Any, name: str, default: Any = None) -> Any:
