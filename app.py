@@ -133,12 +133,12 @@ def _format_prompt(message: str, history: list[ChatMessage]) -> str:
     )
 
 
-@app.get("/", include_in_schema=False)
+@app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
 def index() -> FileResponse:
     return FileResponse(ROOT_DIR / "static" / "index.html")
 
 
-@app.get("/widget.js", include_in_schema=False)
+@app.api_route("/widget.js", methods=["GET", "HEAD"], include_in_schema=False)
 def widget_script() -> FileResponse:
     return FileResponse(
         ROOT_DIR / "static" / "widget.js",
@@ -146,7 +146,7 @@ def widget_script() -> FileResponse:
     )
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 def health() -> dict[str, str | bool]:
     configured_store = bool(os.getenv("FILE_SEARCH_STORE_NAME", "").strip())
     if not configured_store and STORE_NAME_FILE.is_file():
